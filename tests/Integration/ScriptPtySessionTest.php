@@ -62,11 +62,13 @@ final class ScriptPtySessionTest extends TestCase
             usleep(200000);
             $session->write("\x03printf 'CTRL_C_OK\\n'\r");
             $this->waitFor($session, 'CTRL_C_OK', 2);
-            $session->write("stty -icanon -echo -isig; od -An -tx1 -N1; stty sane\r");
-            usleep(200000);
-            $session->read();
-            $session->write("\x0b");
-            self::assertStringContainsString(' 0b', $this->waitFor($session, ' 0b', 2));
+            foreach (["\x0b" => '0b', "\x1d" => '1d', "\x7f" => '7f'] as $byte => $hex) {
+                $session->write("stty -icanon -echo -isig; od -An -tx1 -N1; stty sane\r");
+                usleep(200000);
+                $session->read();
+                $session->write($byte);
+                self::assertStringContainsString(" {$hex}", $this->waitFor($session, " {$hex}", 2));
+            }
         } finally {
             $session->close();
             $previousShell === false ? putenv('SHELL') : putenv("SHELL={$previousShell}");

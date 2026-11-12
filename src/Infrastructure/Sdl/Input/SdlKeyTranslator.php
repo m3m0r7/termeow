@@ -11,7 +11,8 @@ use Pnlx\Libsdl\Types\SDL_Event;
 readonly class SdlKeyTranslator implements SdlKeyTranslatorInterface
 {
     private const CTRL_MASK = 0x00c0;
-    private const CONTROL_BYTE_MASK = 0xff;
+    private const SHIFT_MASK = 0x0003;
+    private const ALTGR_MASK = 0x4200;
 
     public function translate(SDL_Event $event): ?string
     {
@@ -22,17 +23,22 @@ readonly class SdlKeyTranslator implements SdlKeyTranslatorInterface
         $key = $keysym->getSym();
         $modifiers = $keysym->getMod();
         if (($modifiers & self::CTRL_MASK) !== 0) {
-            if ($key >= ord('a') && $key <= ord('z')) {
-                return chr(($key - ord('a') + 1) & self::CONTROL_BYTE_MASK);
+            if (($modifiers & self::ALTGR_MASK) !== 0) {
+                return null;
+            }
+            if ($key >= SDL_KeyCode::SDLK_a->value && $key <= SDL_KeyCode::SDLK_z->value) {
+                return chr($key - SDL_KeyCode::SDLK_a->value + 1);
             }
             $control = match ($key) {
-                SDL_KeyCode::SDLK_SPACE->value, ord('2'), ord('@') => "\x00",
-                SDL_KeyCode::SDLK_LEFTBRACKET->value, ord('3') => "\x1b",
-                SDL_KeyCode::SDLK_BACKSLASH->value, ord('4') => "\x1c",
-                SDL_KeyCode::SDLK_RIGHTBRACKET->value, ord('5') => "\x1d",
-                ord('6'), ord('^') => "\x1e",
-                ord('7'), ord('_'), ord('-') => "\x1f",
-                ord('8'), ord('?') => "\x7f",
+                SDL_KeyCode::SDLK_SPACE->value, SDL_KeyCode::SDLK_2->value, SDL_KeyCode::SDLK_AT->value => "\x00",
+                SDL_KeyCode::SDLK_LEFTBRACKET->value, SDL_KeyCode::SDLK_3->value => "\x1b",
+                SDL_KeyCode::SDLK_BACKSLASH->value, SDL_KeyCode::SDLK_4->value => "\x1c",
+                SDL_KeyCode::SDLK_RIGHTBRACKET->value, SDL_KeyCode::SDLK_5->value => "\x1d",
+                SDL_KeyCode::SDLK_6->value, SDL_KeyCode::SDLK_CARET->value => "\x1e",
+                SDL_KeyCode::SDLK_7->value, SDL_KeyCode::SDLK_UNDERSCORE->value,
+                    SDL_KeyCode::SDLK_MINUS->value => "\x1f",
+                SDL_KeyCode::SDLK_8->value, SDL_KeyCode::SDLK_QUESTION->value => "\x7f",
+                SDL_KeyCode::SDLK_SLASH->value => ($modifiers & self::SHIFT_MASK) !== 0 ? "\x7f" : null,
                 SDL_KeyCode::SDLK_LEFT->value => "\x1b[1;5D",
                 SDL_KeyCode::SDLK_RIGHT->value => "\x1b[1;5C",
                 SDL_KeyCode::SDLK_UP->value => "\x1b[1;5A",
