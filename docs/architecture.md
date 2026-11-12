@@ -28,4 +28,4 @@ TOML tables merge recursively. A later value overrides the same key without repl
 
 ## Verification
 
-`composer check` runs PHPUnit, PHPStan at max level, and PHP_CodeSniffer. Integration tests render SDL bitmap output and exercise a real PTY with `pwd`, `ls`, version commands, UTF-8, Ctrl+C, Ctrl+K, and `sl` when installed. The SDL renderer also handles IME composition without sending uncommitted text to the shell.
+`composer check` runs PHPUnit, PHPStan at max level, and PHP_CodeSniffer. Integration tests render SDL bitmap output and exercise a real PTY with `pwd`, `ls`, version commands, UTF-8, C0/DEL control bytes, and `sl` when installed. SDL key translation covers the full C0 range and common aliases while preserving AltGr text input. The SDL renderer also handles IME composition without sending uncommitted text to the shell.

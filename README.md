@@ -49,7 +49,7 @@ vendor/bin/termeow
 
 Pnl generates platform-specific bindings in the installed Termeow package. The generated `pnlx-lock.json` is local and ignored; run the same three-target install command after replacing the package or changing the native platform. Composer does not run dependency scripts during installation. The command starts the shell in the caller's current directory.
 
-Type `pwd` or `ls` and press Enter. `sl` works when it is installed on `PATH`. Ctrl+C interrupts the foreground job; Ctrl+K and the other supported control keys are passed to the shell. Close the window or type `exit` to quit.
+Type `pwd` or `ls` and press Enter. `sl` works when it is installed on `PATH`. Ctrl+C interrupts the foreground job. `Ctrl+A`–`Ctrl+Z`, `Ctrl+Space`, `Ctrl+@`, `Ctrl+[`, `Ctrl+\`, `Ctrl+]`, `Ctrl+^`, and `Ctrl+_` send C0 control bytes; `Ctrl+?` sends DEL. Number-key aliases `Ctrl+2`–`Ctrl+8` are also supported. Close the window or type `exit` to quit.
 
 Japanese input uses the system IME. Composition text appears underlined at the terminal cursor, with the native candidate window nearby. Only committed UTF-8 text is sent to the shell; keys used while composing do not submit a command.
 

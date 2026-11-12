@@ -16,6 +16,8 @@ use Pnlx\Libsdl\Enums\SDL_WindowEventID;
 
 final class SdlInputEventHandlerTest extends TestCase
 {
+    private const LEFT_CTRL = 0x0040;
+
     public function testJapaneseCompositionDoesNotSubmitUntilCommitted(): void
     {
         $handler = new SdlInputEventHandler(new SdlKeyTranslator(), new SdlTextDecoder());
@@ -32,6 +34,12 @@ final class SdlInputEventHandlerTest extends TestCase
         $return->getKey()->getKeysym()->setSym(SDL_KeyCode::SDLK_RETURN->value);
         self::assertSame([], iterator_to_array($handler->handle($return)));
 
+        $control = new SDL_Event();
+        $control->setType(SDL_EventType::SDL_KEYDOWN->value);
+        $control->getKey()->getKeysym()->setSym(SDL_KeyCode::SDLK_RIGHTBRACKET->value);
+        $control->getKey()->getKeysym()->setMod(self::LEFT_CTRL);
+        self::assertSame([], iterator_to_array($handler->handle($control)));
+
         $committed = new SDL_Event();
         $committed->setType(SDL_EventType::SDL_TEXTINPUT->value);
         $this->setText($committed->cdata()[0]->text->text, '日本');
@@ -43,6 +51,11 @@ final class SdlInputEventHandlerTest extends TestCase
             $returnBytes .= $action->bytes;
         }
         self::assertSame("\r", $returnBytes);
+        $controlBytes = '';
+        foreach ($handler->handle($control) as $action) {
+            $controlBytes .= $action->bytes;
+        }
+        self::assertSame("\x1d", $controlBytes);
     }
 
     public function testLongCompositionAndChunkedCommit(): void
