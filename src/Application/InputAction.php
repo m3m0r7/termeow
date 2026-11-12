@@ -4,13 +4,26 @@ declare(strict_types=1);
 
 namespace Termeow\Application;
 
-final readonly class InputAction
+readonly class InputAction implements InputActionInterface
 {
     private function __construct(
         public string $bytes,
         public bool $quit,
-        public ?TextComposition $composition,
+        public ?TextCompositionInterface $composition,
     ) {
+    }
+
+    public function bytes(): string
+    {
+        return $this->bytes;
+    }
+    public function quitRequested(): bool
+    {
+        return $this->quit;
+    }
+    public function compositionValue(): ?TextCompositionInterface
+    {
+        return $this->composition;
     }
 
     public static function write(string $bytes): self
@@ -23,7 +36,7 @@ final readonly class InputAction
         return new self('', true, null);
     }
 
-    public static function composition(TextComposition $composition): self
+    public static function composition(TextCompositionInterface $composition): self
     {
         return new self('', false, $composition);
     }

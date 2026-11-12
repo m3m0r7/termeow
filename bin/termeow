@@ -3,13 +3,31 @@
 
 declare(strict_types=1);
 
-use Composer\InstalledVersions;
-use Termeow\Application\TerminalApplication;
-use Termeow\Infrastructure\Config\TerminalOptions;
-use Termeow\Infrastructure\Emulation\LibvtermScreen;
-use Termeow\Infrastructure\Input\SdlInputSource;
-use Termeow\Infrastructure\Process\ScriptPtySession;
-use Termeow\Infrastructure\Rendering\SdlRenderer;
+use Termeow\Application\TerminalRunner;
+use Termeow\Domain\Value\WorkingDirectory;
+use Termeow\Infrastructure\Cli\ConsoleApplication;
+use Termeow\Infrastructure\Composition\TermeowTerminalFactory;
+use Termeow\Infrastructure\Pnl\PnlBindingLoader;
+use Termeow\Infrastructure\Emulation\LibvtermScreenFactory;
+use Termeow\Infrastructure\Process\ScriptPtySessionFactory;
+use Termeow\Infrastructure\Sdl\Input\SdlInputSourceFactory;
+use Termeow\Infrastructure\Composition\DefaultTerminalDimensions;
+use Termeow\Infrastructure\Cli\TerminalCommand;
+use Termeow\Infrastructure\Cli\VersionInfo;
+use Termeow\Infrastructure\Cli\TermeowIdentity;
+use Termeow\Infrastructure\Cli\DefaultCredits;
+use Termeow\Infrastructure\Process\ScriptCommand;
+use Termeow\Infrastructure\Process\DefaultPtyScriptSettings;
+use Termeow\Infrastructure\Process\TerminalEnvironment;
+use Termeow\Infrastructure\Sdl\Rendering\SdlRendererFactory;
+use Termeow\Infrastructure\Sdl\Rendering\SdlDisplayFactory;
+use Termeow\Infrastructure\Config\ColorSchemeParser;
+use Termeow\Infrastructure\Config\ConfigurationPaths;
+use Termeow\Infrastructure\Config\FontResolver;
+use Termeow\Infrastructure\Config\FontMatchCommand;
+use Termeow\Infrastructure\Config\WindowSettings;
+use Termeow\Infrastructure\Config\LayeredTomlConfigurationLoader;
+use Termeow\Infrastructure\Config\TerminalOptionsFactory;
 
 $packageDirectory = dirname(__DIR__);
 $autoload = isset($_composer_autoload_path) && is_string($_composer_autoload_path)
@@ -19,53 +37,43 @@ if (!is_file($autoload)) {
     $autoload = dirname($packageDirectory, 2) . '/autoload.php';
 }
 require $autoload;
-try {
-    $argv = $_SERVER['argv'] ?? null;
-    if (!is_array($argv) || !isset($argv[0]) || !is_string($argv[0])) {
-        throw new RuntimeException('Command arguments are unavailable');
-    }
-    $argc = count($argv);
-    $option = $argv[1] ?? null;
-    if ($option !== null && !is_string($option)) {
-        throw new InvalidArgumentException(TerminalOptions::usage());
-    }
 
-    $internal = getenv('TERM_PROGRAM') === 'termeow';
-    if (basename($argv[0]) === 'termoew' && !$internal) {
-        throw new RuntimeException('termoew is available only inside Termeow.');
-    }
-    if (($argc === 2 && in_array($option, ['-v', '--version'], true)) || ($internal && $argc === 1)) {
-        $version = InstalledVersions::getPrettyVersion('m3m0r7/termeow') ?? '0.1.0-dev';
-        echo "Termeow {$version}\n";
-        echo 'PHP ', PHP_VERSION, "\n";
-        echo "Author: m3m0r7\n";
-        echo "Built with: pnl, SDL2, SDL_ttf, libvterm\n";
-        exit(0);
-    }
-    if ($argc === 2 && $option === '--help') {
-        echo TerminalOptions::usage();
-        exit(0);
-    }
-    if ($argc !== 1) {
-        throw new InvalidArgumentException(TerminalOptions::usage());
-    }
-    $pnlAutoload = $packageDirectory . '/@pnlx/autoload.php';
-    if (!is_file($pnlAutoload)) {
-        throw new RuntimeException(
-            'Native bindings are missing. Run vendor/bin/pnl install in the Termeow package directory.',
-        );
-    }
-    require $pnlAutoload;
-    $directory = getcwd();
-    if ($directory === false) {
-        throw new RuntimeException('Could not determine the working directory');
-    }
-    $options = TerminalOptions::fromFile($packageDirectory . '/termeow.toml');
-    $screen = new LibvtermScreen(30, 100, $options->colors);
-    $renderer = new SdlRenderer($screen, $options);
-    $session = new ScriptPtySession($screen->rows(), $screen->columns(), $directory);
-    (new TerminalApplication($screen, $session, $renderer, new SdlInputSource()))->run();
-} catch (Throwable $exception) {
-    fwrite(STDERR, $exception->getMessage() . PHP_EOL);
+$cwd = getcwd();
+$home = getenv('HOME');
+if ($cwd === false) {
+    fwrite(STDERR, "Could not determine the current directory\n");
     exit(1);
 }
+$homeDirectory = is_string($home) && is_dir($home) ? $home : $packageDirectory;
+$directory = WorkingDirectory::at($cwd);
+$paths = new ConfigurationPaths(
+    WorkingDirectory::at($packageDirectory),
+    WorkingDirectory::at($homeDirectory),
+    $directory,
+);
+$identity = new TermeowIdentity();
+$runner = new TerminalRunner(
+    new LayeredTomlConfigurationLoader($paths),
+    new TerminalOptionsFactory(
+        new FontResolver(new FontMatchCommand()),
+        new ColorSchemeParser(),
+        WindowSettings::titled('Termeow'),
+    ),
+    new TermeowTerminalFactory(
+        new PnlBindingLoader(WorkingDirectory::at($packageDirectory)),
+        new DefaultTerminalDimensions(),
+        new LibvtermScreenFactory(),
+        new SdlRendererFactory(new SdlDisplayFactory()),
+        new ScriptPtySessionFactory(
+            new ScriptCommand(new DefaultPtyScriptSettings()),
+            new TerminalEnvironment($identity, WorkingDirectory::at($packageDirectory), new DefaultPtyScriptSettings()),
+        ),
+        new SdlInputSourceFactory(),
+    ),
+    $directory,
+);
+$version = new VersionInfo($identity, new DefaultCredits());
+$application = new ConsoleApplication($version);
+$application->add(new TerminalCommand($runner, $version));
+$application->setDefaultCommand('termeow', true);
+exit($application->run());

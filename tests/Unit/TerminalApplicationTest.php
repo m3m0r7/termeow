@@ -6,19 +6,20 @@ namespace Termeow\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Termeow\Application\InputAction;
-use Termeow\Application\Port\InputSource;
-use Termeow\Application\Port\Renderer;
-use Termeow\Application\Port\Screen;
-use Termeow\Application\Port\Session;
+use Termeow\Application\Port\InputSourceInterface;
+use Termeow\Application\Port\RendererInterface;
+use Termeow\Application\Port\ScreenInterface;
+use Termeow\Application\Port\SessionInterface;
 use Termeow\Application\TerminalApplication;
 use Termeow\Application\TextComposition;
+use Termeow\Application\TextCompositionInterface;
 use Termeow\Domain\Terminal\Cursor;
 
 final class TerminalApplicationTest extends TestCase
 {
     public function testTransfersInputAndOutputAndClosesSession(): void
     {
-        $screen = new class implements Screen {
+        $screen = new class implements ScreenInterface {
             public string $received = '';
             public function rows(): int
             {
@@ -38,10 +39,10 @@ final class TerminalApplicationTest extends TestCase
             }
             public function cursor(): Cursor
             {
-                return new Cursor(0, 0);
+                return Cursor::at(0, 0);
             }
         };
-        $session = new class implements Session {
+        $session = new class implements SessionInterface {
             public string $written = '';
             public bool $closed = false;
             private int $polls = 0;
@@ -62,10 +63,10 @@ final class TerminalApplicationTest extends TestCase
                 $this->closed = true;
             }
         };
-        $renderer = new class implements Renderer {
+        $renderer = new class implements RendererInterface {
             public int $draws = 0;
-            public ?TextComposition $composition = null;
-            public function setComposition(TextComposition $composition): void
+            public ?TextCompositionInterface $composition = null;
+            public function setComposition(TextCompositionInterface $composition): void
             {
                 $this->composition = $composition;
             }
@@ -74,10 +75,10 @@ final class TerminalApplicationTest extends TestCase
                 $this->draws++;
             }
         };
-        $input = new class implements InputSource {
+        $input = new class implements InputSourceInterface {
             public function poll(): iterable
             {
-                return [InputAction::composition(new TextComposition("日本", 2, 0)), InputAction::write("\x03")];
+                return [InputAction::composition(TextComposition::of("日本", 2, 0)), InputAction::write("\x03")];
             }
         };
 
@@ -86,7 +87,7 @@ final class TerminalApplicationTest extends TestCase
         self::assertSame("\x03", $session->written);
         self::assertSame('output', $screen->received);
         self::assertSame(1, $renderer->draws);
-        self::assertSame("日本", $renderer->composition?->text);
+        self::assertSame("日本", $renderer->composition?->text());
         self::assertTrue($session->closed);
     }
 }

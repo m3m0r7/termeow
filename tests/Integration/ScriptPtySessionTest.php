@@ -6,6 +6,15 @@ namespace Termeow\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use Termeow\Infrastructure\Process\ScriptPtySession;
+use Termeow\Infrastructure\Process\NativePtyProcess;
+use Termeow\Infrastructure\Process\PtyInputWriter;
+use Termeow\Infrastructure\Process\PtyOutputReader;
+use Termeow\Infrastructure\Process\ScriptCommand;
+use Termeow\Infrastructure\Process\DefaultPtyScriptSettings;
+use Termeow\Infrastructure\Cli\TermeowIdentity;
+use Termeow\Infrastructure\Process\TerminalEnvironment;
+use Termeow\Domain\Value\TerminalDimensions;
+use Termeow\Domain\Value\WorkingDirectory;
 
 final class ScriptPtySessionTest extends TestCase
 {
@@ -14,13 +23,13 @@ final class ScriptPtySessionTest extends TestCase
         $directory = dirname(__DIR__, 2);
         $previousShell = getenv('SHELL');
         putenv('SHELL=/bin/sh');
-        $session = new ScriptPtySession(30, 100, $directory);
+        $session = $this->createSession(30, 100, $directory);
         try {
             self::assertStringContainsString($directory, $this->command($session, 'pwd', $directory));
             self::assertStringContainsString('README.md', $this->command($session, 'ls', 'README.md'));
             $japanese = $this->command($session, "printf '%s\\n' 日本語入力OK", "\r\n日本語入力OK\r\n");
             self::assertStringContainsString("\r\n日本語入力OK\r\n", $japanese);
-            $version = \Composer\InstalledVersions::getPrettyVersion('m3m0r7/termeow') ?? '0.1.0-dev';
+            $version = \Composer\InstalledVersions::getPrettyVersion('m3m0r7/termeow') ?? '0.1.0';
             $environmentOutput = $this->command(
                 $session,
                 'printf "%s\\n" "$TERM_PROGRAM:$TERM_PROGRAM_VERSION"',
@@ -29,8 +38,6 @@ final class ScriptPtySessionTest extends TestCase
             self::assertStringContainsString("termeow:{$version}", $environmentOutput);
             $versionOutput = $this->command($session, 'termeow -v', 'Built with:');
             self::assertStringContainsString("Termeow {$version}", $versionOutput);
-            $aliasOutput = $this->command($session, 'termoew --version', 'Built with:');
-            self::assertStringContainsString("Termeow {$version}", $aliasOutput);
             if (trim((string) shell_exec('command -v sl')) !== '') {
                 $session->write("sl\r");
                 $output = $this->waitFor($session, '(@@)', 15);
@@ -47,7 +54,7 @@ final class ScriptPtySessionTest extends TestCase
     {
         $previousShell = getenv('SHELL');
         putenv('SHELL=/bin/sh');
-        $session = new ScriptPtySession(5, 40, dirname(__DIR__, 2));
+        $session = $this->createSession(5, 40, dirname(__DIR__, 2));
         try {
             usleep(100000);
             $session->read();
@@ -64,6 +71,21 @@ final class ScriptPtySessionTest extends TestCase
             $session->close();
             $previousShell === false ? putenv('SHELL') : putenv("SHELL={$previousShell}");
         }
+    }
+
+    private function createSession(int $rows, int $columns, string $directory): ScriptPtySession
+    {
+        $process = new NativePtyProcess(
+            new ScriptCommand(new DefaultPtyScriptSettings()),
+            new TerminalEnvironment(
+                new TermeowIdentity(),
+                WorkingDirectory::at(dirname(__DIR__, 2)),
+                new DefaultPtyScriptSettings(),
+            ),
+            TerminalDimensions::of($rows, $columns),
+            WorkingDirectory::at($directory),
+        );
+        return new ScriptPtySession(new PtyInputWriter($process), new PtyOutputReader($process), $process);
     }
 
     private function command(ScriptPtySession $session, string $command, string $needle): string

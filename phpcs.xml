@@ -3,7 +3,6 @@
     <rule ref="PSR12"/>
     <file>src</file>
     <file>bin/termeow</file>
-    <file>terminal.php</file>
     <file>tests</file>
     <arg name="extensions" value="php"/>
 </ruleset>

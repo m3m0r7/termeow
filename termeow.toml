@@ -2,7 +2,7 @@
 family = "Source Code Pro for Powerline"
 fallback = "Source Han Code JP"
 size = 11
-antialias = false
+antialias = true
 
 [window]
 title = "Termeow"
