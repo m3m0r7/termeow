@@ -17,6 +17,15 @@ use Termeow\Infrastructure\Sdl\Rendering\SdlDisplayFactory;
 
 final class SdlRendererTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $directory = dirname(__DIR__, 2) . '/tmp';
+        if (!is_dir($directory) && !mkdir($directory, 0775, true) && !is_dir($directory)) {
+            self::fail('Could not create the bitmap output directory');
+        }
+    }
+
     public function testRenderedBitmapContainsAnsiForegroundAndBackground(): void
     {
         $options = TestOptions::fromDefault();
