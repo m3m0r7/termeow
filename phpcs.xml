@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<ruleset name="Termeow">
+    <rule ref="PSR12"/>
+    <file>src</file>
+    <file>bin/termeow</file>
+    <file>tests</file>
+    <arg name="extensions" value="php"/>
+</ruleset>

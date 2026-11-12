@@ -1,0 +1,32 @@
+[font]
+family = "Source Code Pro for Powerline"
+fallback = "Source Han Code JP"
+size = 11
+antialias = true
+
+[window]
+title = "Termeow"
+
+[colors.primary]
+foreground = "#FCFCFA"
+background = "#000000"
+
+[colors.normal]
+black = "#727072"
+red = "#FF6188"
+green = "#A9DC76"
+yellow = "#FFD866"
+blue = "#AB9DF2"
+magenta = "#f54966"
+cyan = "#78DCE8"
+white = "#FCFCFA"
+
+[colors.bright]
+black = "#727072"
+red = "#FF6188"
+green = "#A9DC76"
+yellow = "#FFD866"
+blue = "#AB9DF2"
+magenta = "#f54966"
+cyan = "#78DCE8"
+white = "#FCFCFA"

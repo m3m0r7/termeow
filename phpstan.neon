@@ -1,0 +1,18 @@
+parameters:
+    level: max
+    paths:
+        - src
+        - bin/termeow
+        - tests
+    bootstrapFiles:
+        - @pnlx/autoload.php
+    # Pnl の FFI CData フィールドは生成 API 上 mixed で、PHPStan に構造を渡せない。
+    ignoreErrors:
+        - {identifier: property.nonObject, path: src/Infrastructure/Emulation/LibvtermCellReader.php, count: 7}
+        - {identifier: argument.type, path: src/Infrastructure/Emulation/LibvtermCellReader.php, count: 6}
+        - {identifier: offsetAccess.nonOffsetAccessible, path: src/Infrastructure/Emulation/LibvtermCellReader.php, count: 1}
+        - {identifier: property.nonObject, path: src/Infrastructure/Emulation/LibvtermPaletteInstaller.php, count: 6}
+        - {identifier: property.nonObject, path: src/Infrastructure/Sdl/Input/SdlTextDecoder.php, count: 6}
+        - {identifier: property.nonObject, path: tests/Integration/SdlInputTranslationTest.php, count: 24}
+        - {identifier: offsetAccess.nonOffsetAccessible, path: tests/Integration/SdlInputTranslationTest.php, count: 1}
+        - {identifier: property.nonObject, path: tests/Integration/SdlInputEventHandlerTest.php, count: 10}
