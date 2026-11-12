@@ -2,26 +2,26 @@
 
 Termeow is a small terminal application written in PHP. SDL2 and SDL_ttf render the window, libvterm interprets terminal output, and a controlling pseudo terminal runs an interactive shell. Native libraries are accessed through [pnl](https://github.com/m3m0r7/pnl).
 
+## Demo
+
+### Termeow running
+
+![Termeow displaying its version and an interactive shell prompt](docs/img1.png)
+
+### Vim in Termeow
+
+![Vim editing termeow.toml inside Termeow](docs/img2.png)
+
 ## Requirements
 
 - PHP 8.3 or newer with FFI and mbstring
 - Composer
 - macOS or Linux with a desktop display
-- SDL2, SDL2_ttf, and libvterm libraries and headers
+- libclang for pnl's binding generation
 - `/usr/bin/script` and a monospace font
 - Fontconfig (`fc-match`) when configuring fonts by family name
 
-Install native libraries on macOS with Homebrew:
-
-```sh
-brew install sdl2 sdl2_ttf libvterm
-```
-
-On Debian or Ubuntu:
-
-```sh
-sudo apt install libsdl2-dev libsdl2-ttf-dev libvterm-dev php-ffi php-mbstring
-```
+Pnl checks for SDL2, SDL2_ttf, and libvterm during `pnl install`. If they are missing, it offers to run the package's install recipe for the host OS. Separate Homebrew or apt commands are not needed on supported systems.
 
 ## Quick start
 
@@ -47,11 +47,11 @@ Type `pwd` or `ls` and press Enter. `sl` works when it is installed on `PATH`. C
 
 Japanese input uses the system IME. Composition text appears underlined at the terminal cursor, with the native candidate window nearby. Only committed UTF-8 text is sent to the shell; keys used while composing do not submit a command.
 
-`termeow -v` and `termeow --version` print the Termeow version, PHP runtime version, and credits. Inside the Termeow shell, entering `termeow` shows the same information. The `termoew` alias is available only inside that shell. The child shell receives `TERM_PROGRAM=termeow` and `TERM_PROGRAM_VERSION`.
+`termeow -v` and `termeow --version` print the Termeow version, PHP runtime version, and credits. Inside the Termeow shell, entering `termeow` shows the same information. The child shell receives `TERM_PROGRAM=termeow` and `TERM_PROGRAM_VERSION`.
 
 ## Configuration
 
-Edit the package's `termeow.toml` to choose the font, fallback font, text size, window title, and ANSI colors:
+Configure fonts, colors, and the window title in `termeow.toml`. Termeow loads the package default, then `~/termeow.toml`, then `<cwd>/termeow.toml`; later files override only the keys they define. Relative font paths are resolved from the file that defines each font key:
 
 ```toml
 [font]
@@ -68,7 +68,7 @@ The primary font must have equal-width ASCII glyphs. The fallback font supplies 
 
 ## Development
 
-The code is split into terminal values (`src/Domain`), the terminal loop and ports (`src/Application`), and SDL, libvterm, PTY, input, and configuration adapters (`src/Infrastructure`). The application layer does not depend on pnl types.
+The code is split into terminal values (`src/Domain`), the terminal loop and ports (`src/Application`), and adapters (`src/Infrastructure`). SDL input and rendering live together under `Infrastructure/Sdl`; libvterm, PTY, configuration, and pnl each own their adapter modules. `TermeowTerminalFactory` assembles them through interfaces, while `bin/termeow` selects concrete implementations. Symfony Console provides the command and Symfony Process resolves font families. See [architecture](docs/architecture.md) for dependency boundaries and configuration precedence.
 
 ```sh
 composer test   # PHPUnit unit and integration tests
