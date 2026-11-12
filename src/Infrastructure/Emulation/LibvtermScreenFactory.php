@@ -18,6 +18,7 @@ readonly class LibvtermScreenFactory implements ScreenFactoryInterface
             $colors,
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
     }
 }

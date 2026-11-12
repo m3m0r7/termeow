@@ -41,6 +41,10 @@ readonly class TerminalApplication implements TerminalApplicationInterface
                 $output = $this->session->read();
                 if ($output !== '') {
                     $this->screen->write($output);
+                    $response = $this->screen->readResponses();
+                    if ($response !== '') {
+                        $this->session->write($response);
+                    }
                     $dirty = true;
                 }
                 if ($dirty) {
