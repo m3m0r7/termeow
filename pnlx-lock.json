@@ -1,0 +1,88 @@
+{
+  "schema_version": "2026-07-01",
+  "generated_at": "2026-11-11T06:38:02Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "aarch64",
+    "libc": null,
+    "php_version": "8.5.12",
+    "php_sapi": "cli",
+    "php_zts": false
+  },
+  "extensions": {
+    "libsdl/libsdl": {
+      "version": "2.32.11",
+      "constraint": "=2.32.11",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libsdl",
+        "reference": "8977708838252017a25f9ab391505911e6076592"
+      },
+      "dist": {
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libsdl",
+        "sha256": "41667c3522e94b8ff2e1f8e7293ab4a471c39a76806883dfa77e6de8b840f7a6"
+      },
+      "classes": [
+        "Pnlx\\Libsdl\\Libsdl"
+      ],
+      "dependencies": {},
+      "native_libraries": {
+        "sdl2": {
+          "name": "libSDL2.dylib",
+          "version": "2.32.74",
+          "sha256": "ea201d43be1bc0796e66424ec7dccb071f7bf2708d365323958ec31962c2b8df"
+        }
+      }
+    },
+    "libsdl/libsdl-ttf": {
+      "version": "2.24.0",
+      "constraint": "=2.24.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libsdl-ttf",
+        "reference": "8977708838252017a25f9ab391505911e6076592"
+      },
+      "dist": {
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libsdl-ttf",
+        "sha256": "d8ee4d643d2124afb143f66f7c0b18a1cdf10f9b73001dc64b79d4c9e75ca4a8"
+      },
+      "classes": [
+        "Pnlx\\LibsdlTtf\\LibsdlTtf"
+      ],
+      "dependencies": {
+        "libsdl/libsdl": "2.32.11"
+      },
+      "native_libraries": {
+        "sdl2_ttf": {
+          "name": "libSDL2_ttf.dylib",
+          "version": "2.24.0",
+          "sha256": "dd5ce9560862a9377b90fe4a4b69b8196a8a85e7d8f882565491979bef7b28c3"
+        }
+      }
+    },
+    "libvterm/libvterm": {
+      "version": "0.3.3",
+      "constraint": "=0.3.3",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libvterm",
+        "reference": "8977708838252017a25f9ab391505911e6076592"
+      },
+      "dist": {
+        "url": "https://github.com/m3m0r7/pnl-packages/tree/main/packages/libvterm",
+        "sha256": "54ea70691f716736540b94f4353bc97b1d9db6a78c9e71eae42cf9a9670cf328"
+      },
+      "classes": [
+        "Pnlx\\Libvterm\\Libvterm"
+      ],
+      "dependencies": {},
+      "native_libraries": {
+        "vterm": {
+          "name": "libvterm.dylib",
+          "version": "0.3.3",
+          "sha256": "8cc73a3b067aa89741d272ad6b2dbc2adfcf3aeb36e9aec8a725965c49e922fa"
+        }
+      }
+    }
+  }
+}
