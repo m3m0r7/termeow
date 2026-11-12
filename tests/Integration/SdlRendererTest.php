@@ -7,18 +7,27 @@ namespace Termeow\Tests\Integration;
 use PHPUnit\Framework\TestCase;
 use Pnlx\LibsdlTtf\LibsdlTtf as TTF;
 use Termeow\Application\TextComposition;
-use Termeow\Infrastructure\Config\TerminalOptions;
+use Termeow\Tests\Support\TestOptions;
+use Termeow\Domain\Value\TerminalDimensions;
 use Termeow\Infrastructure\Emulation\LibvtermScreen;
-use Termeow\Infrastructure\Rendering\SdlRenderer;
+use Termeow\Infrastructure\Emulation\LibvtermPaletteInstaller;
+use Termeow\Infrastructure\Emulation\LibvtermCellReaderFactory;
+use Termeow\Infrastructure\Sdl\Rendering\SdlRendererFactory;
+use Termeow\Infrastructure\Sdl\Rendering\SdlDisplayFactory;
 
 final class SdlRendererTest extends TestCase
 {
     public function testRenderedBitmapContainsAnsiForegroundAndBackground(): void
     {
-        $options = TerminalOptions::fromFile(dirname(__DIR__, 2) . '/termeow.toml');
-        $screen = new LibvtermScreen(2, 30, $options->colors);
+        $options = TestOptions::fromDefault();
+        $screen = new LibvtermScreen(
+            TerminalDimensions::of(2, 30),
+            $options->colors(),
+            new LibvtermPaletteInstaller(),
+            new LibvtermCellReaderFactory(),
+        );
         $screen->write("pwd \x1b[31mRED\x1b[0m\r\n\x1b[48;2;12;34;56m  \x1b[0m漢\u{E0B0}");
-        $view = new SdlRenderer($screen, $options);
+        $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
         $path = dirname(__DIR__, 2) . '/tmp/phpunit-render.bmp';
         $view->draw($path);
         $bitmap = file_get_contents($path);
@@ -46,10 +55,15 @@ final class SdlRendererTest extends TestCase
 
     public function testDefaultTextIsBrightAndBoldGlyphIsHeavier(): void
     {
-        $options = TerminalOptions::fromFile(dirname(__DIR__, 2) . '/termeow.toml');
-        $screen = new LibvtermScreen(1, 4, $options->colors);
+        $options = TestOptions::fromDefault();
+        $screen = new LibvtermScreen(
+            TerminalDimensions::of(1, 4),
+            $options->colors(),
+            new LibvtermPaletteInstaller(),
+            new LibvtermCellReaderFactory(),
+        );
         $screen->write("B\x1b[1mB\x1b[0m");
-        $view = new SdlRenderer($screen, $options);
+        $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
         $path = dirname(__DIR__, 2) . '/tmp/phpunit-brightness.bmp';
         $view->draw($path);
         $bitmap = file_get_contents($path);
@@ -78,10 +92,15 @@ final class SdlRendererTest extends TestCase
 
     public function testCjkGlyphIsDrawnAtNaturalWidth(): void
     {
-        $options = TerminalOptions::fromFile(dirname(__DIR__, 2) . '/termeow.toml');
-        $screen = new LibvtermScreen(1, 4, $options->colors);
+        $options = TestOptions::fromDefault();
+        $screen = new LibvtermScreen(
+            TerminalDimensions::of(1, 4),
+            $options->colors(),
+            new LibvtermPaletteInstaller(),
+            new LibvtermCellReaderFactory(),
+        );
         $screen->write('漢');
-        $view = new SdlRenderer($screen, $options);
+        $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
         $path = dirname(__DIR__, 2) . '/tmp/phpunit-width.bmp';
         $view->draw($path);
         $bitmap = file_get_contents($path);
@@ -91,14 +110,14 @@ final class SdlRendererTest extends TestCase
         $offset = $this->bitmapInteger($bitmap, 10, 4);
         $cellWidth = intdiv($width - 16, 4);
 
-        $font = TTF::TTF_OpenFontIndex($options->fontPath, $options->fontSize, $options->fontIndex);
+        $font = TTF::TTF_OpenFontIndex($options->fontPath(), $options->fontSize(), $options->fontIndex());
         self::assertNotNull($font);
-        if (TTF::TTF_GlyphIsProvided32($font, mb_ord('漢', 'UTF-8')) === 0 && $options->fallbackFontPath !== null) {
+        if (TTF::TTF_GlyphIsProvided32($font, mb_ord('漢', 'UTF-8')) === 0 && $options->fallbackFontPath() !== null) {
             TTF::TTF_CloseFont($font);
             $font = TTF::TTF_OpenFontIndex(
-                $options->fallbackFontPath,
-                $options->fontSize,
-                $options->fallbackFontIndex,
+                $options->fallbackFontPath(),
+                $options->fontSize(),
+                $options->fallbackFontIndex(),
             );
             self::assertNotNull($font);
         }
@@ -124,15 +143,20 @@ final class SdlRendererTest extends TestCase
 
     public function testCompositionIsVisibleWithoutChangingTerminalOutput(): void
     {
-        $options = TerminalOptions::fromFile(dirname(__DIR__, 2) . '/termeow.toml');
-        $screen = new LibvtermScreen(1, 20, $options->colors);
+        $options = TestOptions::fromDefault();
+        $screen = new LibvtermScreen(
+            TerminalDimensions::of(1, 20),
+            $options->colors(),
+            new LibvtermPaletteInstaller(),
+            new LibvtermCellReaderFactory(),
+        );
         $screen->write('pwd ');
-        $view = new SdlRenderer($screen, $options);
+        $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
         $before = dirname(__DIR__, 2) . '/tmp/phpunit-ime-before.bmp';
         $during = dirname(__DIR__, 2) . '/tmp/phpunit-ime-composing.bmp';
         $after = dirname(__DIR__, 2) . '/tmp/phpunit-ime-after.bmp';
         $view->draw($before);
-        $view->setComposition(new TextComposition('にほん', 3, 0));
+        $view->setComposition(TextComposition::of('にほん', 3, 0));
         $view->draw($during);
         self::assertSame('pwd', $screen->rowText(0));
         self::assertNotSame(file_get_contents($before), file_get_contents($during));

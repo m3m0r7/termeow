@@ -5,64 +5,62 @@ declare(strict_types=1);
 namespace Termeow\Infrastructure\Emulation;
 
 use Pnlx\Libvterm\Libvterm as VTerm;
-use Termeow\Application\Port\Screen;
-use Termeow\Domain\Terminal\Cell;
-use Termeow\Domain\Terminal\ColorScheme;
-use Termeow\Domain\Terminal\Cursor;
-use Termeow\Domain\Terminal\RgbColor;
-use Termeow\Infrastructure\Pnl\NativeScalar;
-use Pnlx\Libvterm\Types\VTermColor;
+use Pnlx\Libvterm\Types\VTerm as NativeTerminal;
 use Pnlx\Libvterm\Types\VTermPos;
-use Pnlx\Libvterm\Types\VTermScreenCell;
+use Pnlx\Libvterm\Types\VTermScreen;
+use Pnlx\Libvterm\Types\VTermState;
+use Termeow\Application\Port\ScreenInterface;
+use Termeow\Domain\Terminal\Cursor;
+use Termeow\Domain\Terminal\ColorSchemeInterface;
+use Termeow\Domain\Value\TerminalDimensionsInterface;
+use Termeow\Infrastructure\Emulation\Exception\TerminalEmulationException;
 
-use const Pnlx\Libvterm\VTERM_COLOR_DEFAULT_BG;
-use const Pnlx\Libvterm\VTERM_COLOR_DEFAULT_FG;
-use const Pnlx\Libvterm\VTERM_COLOR_RGB;
-
-final class LibvtermScreen implements Screen
+class LibvtermScreen implements ScreenInterface
 {
-    private readonly object $terminal;
-    private readonly object $screen;
-    private readonly object $state;
+    private const UTF8_ENABLED = 1;
+    private const ALT_SCREEN_ENABLED = 1;
+    private const FULL_RESET = 1;
+    private readonly NativeTerminal $terminal;
+    private readonly VTermScreen $screen;
+    private readonly VTermState $state;
     private readonly VTermPos $position;
-    private readonly VTermScreenCell $cell;
+    private readonly LibvtermCellReaderInterface $reader;
 
-    public function __construct(public readonly int $rows, public readonly int $columns, ColorScheme $colors)
-    {
-        $this->terminal = VTerm::vterm_new($rows, $columns)
-            ?? throw new \RuntimeException('vterm_new failed');
-        VTerm::vterm_set_utf8($this->terminal, 1);
-        $this->screen = VTerm::vterm_obtain_screen($this->terminal)
-            ?? throw new \RuntimeException('vterm_obtain_screen failed');
-        $this->state = VTerm::vterm_obtain_state($this->terminal)
-            ?? throw new \RuntimeException('vterm_obtain_state failed');
-        VTerm::vterm_screen_enable_altscreen($this->screen, 1);
-        VTerm::vterm_screen_reset($this->screen, 1);
-        $paletteColor = new VTermColor();
-        $paletteColor->setType(NativeScalar::int(VTERM_COLOR_RGB));
-        foreach ($colors->ansi as $index => $color) {
-            $paletteColor->cdata()[0]->rgb->red = $color->red;
-            $paletteColor->cdata()[0]->rgb->green = $color->green;
-            $paletteColor->cdata()[0]->rgb->blue = $color->blue;
-            VTerm::vterm_state_set_palette_color($this->state, $index, $paletteColor);
+    public function __construct(
+        private readonly TerminalDimensionsInterface $dimensions,
+        ColorSchemeInterface $colors,
+        LibvtermPaletteInstallerInterface $palette,
+        LibvtermCellReaderFactoryInterface $readers,
+    ) {
+        $terminal = VTerm::vterm_new($dimensions->rows(), $dimensions->columns())
+            ?? throw new TerminalEmulationException('vterm_new failed');
+        try {
+            VTerm::vterm_set_utf8($terminal, self::UTF8_ENABLED);
+            $screen = VTerm::vterm_obtain_screen($terminal)
+                ?? throw new TerminalEmulationException('vterm_obtain_screen failed');
+            $state = VTerm::vterm_obtain_state($terminal)
+                ?? throw new TerminalEmulationException('vterm_obtain_state failed');
+            VTerm::vterm_screen_enable_altscreen($screen, self::ALT_SCREEN_ENABLED);
+            VTerm::vterm_screen_reset($screen, self::FULL_RESET);
+            $palette->install($state, $colors);
+            $this->terminal = $terminal;
+            $this->screen = $screen;
+            $this->state = $state;
+            $this->position = new VTermPos();
+            $this->reader = $readers->create($screen, $dimensions);
+        } catch (\Throwable $exception) {
+            VTerm::vterm_free($terminal);
+            throw $exception;
         }
-        $this->position = new VTermPos();
-        $this->cell = new VTermScreenCell();
     }
 
     public function rows(): int
     {
-        return $this->rows;
+        return $this->dimensions->rows();
     }
-
     public function columns(): int
     {
-        return $this->columns;
-    }
-
-    public function __destruct()
-    {
-        VTerm::vterm_free($this->terminal);
+        return $this->dimensions->columns();
     }
 
     public function write(string $data): void
@@ -74,13 +72,22 @@ final class LibvtermScreen implements Screen
     public function cursor(): Cursor
     {
         VTerm::vterm_state_get_cursorpos($this->state, $this->position);
-        return new Cursor($this->position->getRow(), $this->position->getCol());
+        return Cursor::at($this->position->getRow(), $this->position->getCol());
+    }
+
+    public function cells(): iterable
+    {
+        return $this->reader->cells();
+    }
+    public function rowText(int $row): string
+    {
+        return $this->reader->rowText($row);
     }
 
     /** @return iterable<array{row:int, text:string}> */
     public function lines(): iterable
     {
-        for ($row = 0; $row < $this->rows; $row++) {
+        for ($row = 0; $row < $this->rows(); $row++) {
             $text = $this->rowText($row);
             if ($text !== '') {
                 yield ['row' => $row, 'text' => $text];
@@ -88,72 +95,8 @@ final class LibvtermScreen implements Screen
         }
     }
 
-    /** @return iterable<Cell> */
-    public function cells(): iterable
+    public function __destruct()
     {
-        for ($row = 0; $row < $this->rows; $row++) {
-            for ($col = 0; $col < $this->columns; $col++) {
-                $this->position->setRow($row)->setCol($col);
-                VTerm::vterm_screen_get_cell($this->screen, $this->position, $this->cell);
-                $width = ord($this->cell->cdata()[0]->width);
-                if ($width === 0) {
-                    continue;
-                }
-                $text = $this->character();
-                $foreground = $this->color($this->cell->getFg(), NativeScalar::int(VTERM_COLOR_DEFAULT_FG));
-                $background = $this->color($this->cell->getBg(), NativeScalar::int(VTERM_COLOR_DEFAULT_BG));
-                $attrs = $this->cell->getAttrs();
-                $reverse = $attrs->getReverse() !== 0;
-                if ($text !== ' ' || $background !== null || $reverse) {
-                    yield new Cell(
-                        $row,
-                        $col,
-                        $width,
-                        $text,
-                        $foreground,
-                        $background,
-                        $reverse,
-                        $attrs->getBold() !== 0,
-                        $attrs->getItalic() !== 0,
-                    );
-                }
-            }
-        }
-    }
-
-    public function rowText(int $row): string
-    {
-        if ($row < 0 || $row >= $this->rows) {
-            throw new \OutOfRangeException('Invalid screen row');
-        }
-        $text = '';
-        for ($col = 0; $col < $this->columns; $col++) {
-            $this->position->setRow($row)->setCol($col);
-            VTerm::vterm_screen_get_cell($this->screen, $this->position, $this->cell);
-            if (ord($this->cell->cdata()[0]->width) !== 0) {
-                $text .= $this->character();
-            }
-        }
-        return rtrim($text);
-    }
-
-    private function character(): string
-    {
-        $points = $this->cell->cdata()[0]->chars;
-        $text = '';
-        for ($index = 0; $index < 6 && $points[$index] !== 0; $index++) {
-            $text .= mb_chr($points[$index], 'UTF-8');
-        }
-        return $text === '' ? ' ' : $text;
-    }
-
-    private function color(VTermColor $color, int $defaultFlag): ?RgbColor
-    {
-        if (($color->getType() & $defaultFlag) !== 0) {
-            return null;
-        }
-        VTerm::vterm_screen_convert_color_to_rgb($this->screen, $color);
-        $rgb = $color->cdata()[0]->rgb;
-        return new RgbColor($rgb->red, $rgb->green, $rgb->blue);
+        VTerm::vterm_free($this->terminal);
     }
 }

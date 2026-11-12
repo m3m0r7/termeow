@@ -1,6 +1,6 @@
 {
   "name": "m3m0r7/termeow",
-  "version": "0.1.0-dev",
+  "version": "0.1.0",
   "description": "A terminal rendered with SDL in PHP",
   "type": "project",
   "bin": ["bin/termeow"],
@@ -14,7 +14,9 @@
     "ext-mbstring": "*",
     "composer-runtime-api": "^2.0",
     "m3m0r7/pnl": "^1.1.2",
-    "internal/toml": "^1.1"
+    "internal/toml": "^1.1",
+    "symfony/console": "^7.3",
+    "symfony/process": "^7.3"
   },
   "autoload": {
     "psr-4": {
@@ -36,5 +38,10 @@
     "phpstan/phpstan": "^2.3",
     "phpunit/phpunit": "^12.5",
     "squizlabs/php_codesniffer": "^4.0"
+  },
+  "config": {
+    "platform": {
+      "php": "8.3.0"
+    }
   }
 }

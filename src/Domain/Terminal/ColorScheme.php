@@ -4,16 +4,29 @@ declare(strict_types=1);
 
 namespace Termeow\Domain\Terminal;
 
-final readonly class ColorScheme
+readonly class ColorScheme implements ColorSchemeInterface
 {
-    /** @param list<RgbColor> $ansi */
     public function __construct(
-        public RgbColor $foreground,
-        public RgbColor $background,
-        public array $ansi,
+        public RgbColorInterface $foreground,
+        public RgbColorInterface $background,
+        public AnsiPaletteInterface $ansi,
     ) {
-        if (count($ansi) !== 16) {
-            throw new \InvalidArgumentException('ANSI palette must contain 16 colors');
-        }
+    }
+
+    public function foreground(): RgbColorInterface
+    {
+        return $this->foreground;
+    }
+    public function background(): RgbColorInterface
+    {
+        return $this->background;
+    }
+    public function ansi(int $index): RgbColorInterface
+    {
+        return $this->ansi->color($index);
+    }
+    public function palette(): array
+    {
+        return $this->ansi->colors();
     }
 }
