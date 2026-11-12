@@ -12,6 +12,7 @@ use Termeow\Domain\Value\TerminalDimensions;
 use Termeow\Infrastructure\Emulation\LibvtermScreen;
 use Termeow\Infrastructure\Emulation\LibvtermPaletteInstaller;
 use Termeow\Infrastructure\Emulation\LibvtermCellReaderFactory;
+use Termeow\Infrastructure\Emulation\LibvtermOutputReaderFactory;
 use Termeow\Infrastructure\Sdl\Rendering\SdlRendererFactory;
 use Termeow\Infrastructure\Sdl\Rendering\SdlDisplayFactory;
 
@@ -34,6 +35,7 @@ final class SdlRendererTest extends TestCase
             $options->colors(),
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write("pwd \x1b[31mRED\x1b[0m\r\n\x1b[48;2;12;34;56m  \x1b[0m漢\u{E0B0}");
         $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
@@ -70,6 +72,7 @@ final class SdlRendererTest extends TestCase
             $options->colors(),
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write("B\x1b[1mB\x1b[0m");
         $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
@@ -107,6 +110,7 @@ final class SdlRendererTest extends TestCase
             $options->colors(),
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write('漢');
         $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);
@@ -158,6 +162,7 @@ final class SdlRendererTest extends TestCase
             $options->colors(),
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write('pwd ');
         $view = (new SdlRendererFactory(new SdlDisplayFactory()))->create($screen, $options);

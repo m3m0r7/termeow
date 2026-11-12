@@ -33,6 +33,10 @@ final class TerminalApplicationTest extends TestCase
             {
                 $this->received .= $data;
             }
+            public function readResponses(): string
+            {
+                return "\x1b[0n";
+            }
             public function cells(): iterable
             {
                 return [];
@@ -84,7 +88,7 @@ final class TerminalApplicationTest extends TestCase
 
         (new TerminalApplication($screen, $session, $renderer, $input))->run();
 
-        self::assertSame("\x03", $session->written);
+        self::assertSame("\x03\x1b[0n", $session->written);
         self::assertSame('output', $screen->received);
         self::assertSame(1, $renderer->draws);
         self::assertSame("日本", $renderer->composition?->text());

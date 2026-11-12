@@ -11,6 +11,7 @@ use Termeow\Domain\Value\TerminalDimensions;
 use Termeow\Infrastructure\Emulation\LibvtermScreen;
 use Termeow\Infrastructure\Emulation\LibvtermPaletteInstaller;
 use Termeow\Infrastructure\Emulation\LibvtermCellReaderFactory;
+use Termeow\Infrastructure\Emulation\LibvtermOutputReaderFactory;
 
 final class LibvtermScreenTest extends TestCase
 {
@@ -22,6 +23,7 @@ final class LibvtermScreenTest extends TestCase
             $colors,
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write(
             "\x1b[31mR\x1b[91mB\x1b[0m\x1b[48;2;12;34;56m \x1b[0m\x1b[7mV\x1b[0m"
@@ -46,6 +48,7 @@ final class LibvtermScreenTest extends TestCase
             $colors,
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $screen->write("\x1b[1mB\x1b[0m\x1b[3mI\x1b[0m");
         $cells = iterator_to_array($screen->cells());
@@ -53,5 +56,25 @@ final class LibvtermScreenTest extends TestCase
         self::assertFalse($cells[0]->italic());
         self::assertFalse($cells[1]->bold());
         self::assertTrue($cells[1]->italic());
+    }
+
+    public function testTerminalStatusQueriesAreReturnedToTheShell(): void
+    {
+        $screen = new LibvtermScreen(
+            TerminalDimensions::of(2, 20),
+            TestOptions::fromDefault()->colors(),
+            new LibvtermPaletteInstaller(),
+            new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
+        );
+
+        $screen->write("\x1b[5n\x1b[6n");
+        self::assertSame("\x1b[0n\x1b[1;1R", $screen->readResponses());
+        self::assertSame('', $screen->readResponses());
+
+        $screen->write("\x1b[");
+        self::assertSame('', $screen->readResponses());
+        $screen->write('5n');
+        self::assertSame("\x1b[0n", $screen->readResponses());
     }
 }

@@ -7,6 +7,7 @@ Termeow is a Composer application (`type: project`) with `bin/termeow` exposed t
 - `Domain` owns terminal cells, colors, cursor positions, dimensions, and their contracts.
 - `Application` owns the terminal loop and ports. It imports no infrastructure type.
 - `Infrastructure/Emulation` owns the libvterm screen, palette installation, cell reading, and their factories.
+- Libvterm-generated terminal responses are read through an application port and written back to the PTY after shell output is parsed. This includes DSR replies used by Neovim at startup.
 - `Infrastructure/Sdl` owns SDL input and rendering. Its runtime, font set, window, terminal grid painter, glyph painter, composition painter, bitmap exporter, and factories stay in this module.
 - `Infrastructure/Process` owns PTY startup arguments, environment, process lifecycle, input writing, output reading, and session creation.
 - `Infrastructure/Config` owns TOML layering, font resolution, and settings creation.

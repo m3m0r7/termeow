@@ -25,12 +25,14 @@ class LibvtermScreen implements ScreenInterface
     private readonly VTermState $state;
     private readonly VTermPos $position;
     private readonly LibvtermCellReaderInterface $reader;
+    private readonly LibvtermOutputReaderInterface $output;
 
     public function __construct(
         private readonly TerminalDimensionsInterface $dimensions,
         ColorSchemeInterface $colors,
         LibvtermPaletteInstallerInterface $palette,
         LibvtermCellReaderFactoryInterface $readers,
+        LibvtermOutputReaderFactoryInterface $outputs,
     ) {
         $terminal = VTerm::vterm_new($dimensions->rows(), $dimensions->columns())
             ?? throw new TerminalEmulationException('vterm_new failed');
@@ -48,6 +50,7 @@ class LibvtermScreen implements ScreenInterface
             $this->state = $state;
             $this->position = new VTermPos();
             $this->reader = $readers->create($screen, $dimensions);
+            $this->output = $outputs->create($terminal);
         } catch (\Throwable $exception) {
             VTerm::vterm_free($terminal);
             throw $exception;
@@ -67,6 +70,11 @@ class LibvtermScreen implements ScreenInterface
     {
         VTerm::vterm_input_write($this->terminal, $data, strlen($data));
         VTerm::vterm_screen_flush_damage($this->screen);
+    }
+
+    public function readResponses(): string
+    {
+        return $this->output->read();
     }
 
     public function cursor(): Cursor

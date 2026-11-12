@@ -12,6 +12,7 @@ use Termeow\Infrastructure\Config\WindowSettings;
 use Termeow\Infrastructure\Emulation\LibvtermScreen;
 use Termeow\Infrastructure\Emulation\LibvtermPaletteInstaller;
 use Termeow\Infrastructure\Emulation\LibvtermCellReaderFactory;
+use Termeow\Infrastructure\Emulation\LibvtermOutputReaderFactory;
 use Termeow\Infrastructure\Sdl\Exception\SdlInitializationException;
 use Termeow\Infrastructure\Sdl\Rendering\SdlDisplayFactory;
 use Termeow\Tests\Support\TestOptions;
@@ -26,6 +27,7 @@ final class SdlDisplayFailureTest extends TestCase
             $settings->colors(),
             new LibvtermPaletteInstaller(),
             new LibvtermCellReaderFactory(),
+            new LibvtermOutputReaderFactory(),
         );
         $invalid = new TerminalOptions(
             FontSettings::of('/missing/font.ttf', 0, null, 0, 11, true),
