@@ -1,0 +1,27 @@
+{
+  "schema_version": "2026-07-01",
+  "repositories": [],
+  "library_paths": [],
+  "output_dir": "@pnlx",
+  "features": {
+    "global_functions": false,
+    "cdata_arguments": false,
+    "scalar_params": true,
+    "scalar_returns": true,
+    "scalar_constants": true
+  },
+  "extensions": {
+    "libsdl/libsdl": {
+      "version": "=2.32.11",
+      "required": true
+    },
+    "libsdl/libsdl-ttf": {
+      "version": "=2.24.0",
+      "required": true
+    },
+    "libvterm/libvterm": {
+      "version": "=0.3.3",
+      "required": true
+    }
+  }
+}

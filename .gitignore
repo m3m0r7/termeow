@@ -1,0 +1,5 @@
+/@pnlx/
+/pnlx-lock.json
+/tmp/
+/vendor/
+/.phpunit.result.cache
